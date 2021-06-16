@@ -1,0 +1,4 @@
+Let us assume, we have a text file file.txt, which has the following content. This file will be used as an input for our example program −
+
+
+Let us assume, we have a text file file.txt, which has the following content. This file will be used as an input for our example program −
