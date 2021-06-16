@@ -6,42 +6,51 @@
 #pragma comment(lib,"ws2_32.lib") //Winsock Library
 
 
-char html[2000], jpg[5000], txt[2000];
+char *jpg, html[2000], txt[2000];
 void filePrep(){
-	int index;
+	
+	int num_read = 0;
+	unsigned long fileLen;
+	char s;
 	FILE *F1, *F2, *F3;
 	F1 = fopen("index.txt", "r");
 	F2 = fopen("index.html", "r");
 	F3 = fopen("abc.jpg", "rb");
 	
+	//Read .txt file
 	if(F1 != NULL){
 
 		char line[200];
 		while(fgets(line,sizeof(line),F1) != NULL){
 			strcat(txt,line);
-		}
-		
-		puts(txt);
+		}			
 	}
 	
+	//Read .html file
 	if(F2 != NULL){
 		char line[200];
 		while(fgets(line,sizeof(line),F2) != NULL){
 			strcat(html,line);
 		}
 		
-		puts(html);
+	}
+
+	//Read .jpg file
+	fseek(F3, 0, SEEK_END);
+	fileLen=ftell(F3);
+	rewind(F3);
+	jpg=malloc((fileLen)*sizeof(char));
+	if (jpg == NULL){
+	    printf("Memory error"); exit (2);
+	}
+	while ((num_read = fread(&s, 1, 1, F3))) {
+	    strncat(jpg,&s,1);
 	}
 	
-		if(F3 != NULL){
-		char line[200];
-		while(fgets(line,sizeof(line),F3) != NULL){
-			strcat(jpg,line);
-		}
-		
-		puts(html);
-	}
-	
+
+	fclose(F3);
+	fclose(F2);
+	fclose(F1);
 
 }
 
@@ -53,26 +62,13 @@ int main(int argc , char *argv[])
 	
 	int c, recv_size;
 	
-	char *message, *msg, server_reply[2000], data[2000], *ptr = NULL;
+	char *message, server_reply[2000], data[2000], *ptr = NULL;
 	char *request, *method, *target;
 	
 	// Read various files
 	filePrep();
 	
-//	pdf = fopen("index.txt", "r");
-	
-//	if(pdf == NULL){
-//		printf("Cannot open the pdf file\n");
-//	}else{
-//		if(fgets(data,2000,pdf) != NULL){
-//			puts(data);
-//		}else{
-//			printf("Cannot read the file\n");
-//		}
-//	}
-//	
-//	
-	msg = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 88\n\n<html><body><p>Fork me? Fork you, @octocat!</p><p>Sean made a change</p></body></html>";
+	//msg = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 88\n\n<html><body><p>Fork me? Fork you, @octocat!</p><p>Sean made a change</p></body></html>";
 
 
 	printf("\nInitialising Winsock...");
@@ -120,40 +116,51 @@ int main(int argc , char *argv[])
 				
 		//Receive message from client
 			
-		while(!((recv_size = recv(new_socket,server_reply, 2000, 0)) == SOCKET_ERROR)){
-			
+			recv_size = recv(new_socket,server_reply, 2000, 0);			
 			
 			puts("\nRequest received");
-//			message = "HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 10\n\nBad world!";  
-//			int val =send(new_socket , message , strlen(message) , 0);		
+		
 				
 			//Add a NULL terminating character to make it a proper string before printing
 			server_reply[recv_size] = '\0';
+			
+			//Get the request
 			request = strtok(server_reply, "\n");
 			method = strtok(request, " ");
 			target = strtok(NULL, " ");
 						
-			//Seperate the request
-			puts(target);
-			if(strcmp(target, "/index.html") == 0){
+			//Serve the request
 			
-			send(new_socket , msg , strlen(msg) , 0);
+			puts(target);
+
+			if(strcmp(target, "/index.html") == 0){
+				
+				char message[] = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 66\n\n";
+				strcat(message,html);
+				send(new_socket , message , strlen(message) , 0);
+		
 			}
 			else if(strcmp(target, "/index.txt") == 0){
 				
-				printf("Text");
+				char message[] = "HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 136\n\n";  
+				strcat(message,txt);
+				puts(txt);
+				send(new_socket , message , strlen(message) , 0);
+
 			}
 			else if(strcmp(target, "/index.jpeg") == 0){
-				printf("Image");
+				printf(jpg);
 			}
 			else if(strcmp(target, "/") == 0){
-				printf("plaint-text");
+				
+				char message[] = "HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello World!";  
+				send(new_socket , message , strlen(message) , 0);	
 			}
 			else{
-				printf("Bad Request");
+				printf("Bad Request\n");
 			}
 			
-		}
+		
 
 	}
 	
